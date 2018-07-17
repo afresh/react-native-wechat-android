@@ -6,33 +6,88 @@
 
 import React, { Component } from 'react';
 import {
-  Platform,
   StyleSheet,
   Text,
-  View
+  View,
+  TouchableOpacity
 } from 'react-native';
 
-const instructions = Platform.select({
-  ios: 'Press Cmd+R to reload,\n' +
-    'Cmd+D or shake for dev menu',
-  android: 'Double tap R on your keyboard to reload,\n' +
-    'Shake or press menu button for dev menu',
-});
+import * as WeChat from './wechat';
+let resolveAssetSource = require('resolveAssetSource');
 
-type Props = {};
-export default class App extends Component<Props> {
+export default class App extends Component {
+  componentDidMount() {
+    // WeChat.registerApp('appid');
+  };
+
+  _sendAuthRequest = () => {
+    let scope = 'snsapi_userinfo';
+    let state = 'wechat_sdk_demo';
+    //判断微信是否安装
+    WeChat.isWXAppInstalled()
+      .then((isInstalled) => {
+        if (isInstalled) {
+          //发送授权请求
+          WeChat.sendAuthRequest(scope, state)
+            .then(responseCode => {
+              //todo: 返回code码，通过code获取access_token
+              // this.getAccessToken(responseCode.code);
+            })
+            .catch(err => {
+              console.log('登录授权发生错误：', err.message);
+            })
+        } else {
+          console.log('没有安装微信，请先安装微信客户端在进行登录');
+        }
+      })
+  };
+
+  _shareToSession = () => {
+    //判断微信是否安装
+    WeChat.isWXAppInstalled()
+      .then((isInstalled) => {
+        if (isInstalled) {
+          //发送授权请求
+          let imageResource = require('./icon64_wx_logo.png');
+          WeChat.shareToSession({
+            type: 'miniProgram',
+            title: '微信小程序消息',
+            description: '发送微信小程序消息给好友',
+            mediaTagName: '小程序消息',
+            messageAction: undefined,
+            messageExt: undefined,
+            imageUrl: resolveAssetSource(imageResource).uri
+          })
+          .then(result => {
+            console.log('成功发送微信小程序消息给好友', result);
+          })
+          .catch(err => {
+            console.log('登录授权发生错误：', err.message);
+          })
+        } else {
+          console.log('没有安装微信，请先安装微信客户端在进行登录');
+        }
+      })
+  };
+
   render() {
     return (
       <View style={styles.container}>
         <Text style={styles.welcome}>
-          Welcome to React Native!
+          Welcome to WeChat for Android!
         </Text>
-        <Text style={styles.instructions}>
-          To get started, edit App.js
-        </Text>
-        <Text style={styles.instructions}>
-          {instructions}
-        </Text>
+        {/* 微信登录demo */}
+        <TouchableOpacity onPress={() => {this._sendAuthRequest()}}>
+          <Text style={styles.instructions}>
+            To Login
+          </Text>
+        </TouchableOpacity>
+        {/* 发送小程序消息到好友 */}
+        <TouchableOpacity onPress={() => {this._shareToSession()}}>
+          <Text style={styles.instructions}>
+            To Share Mini
+          </Text>
+        </TouchableOpacity>
       </View>
     );
   }

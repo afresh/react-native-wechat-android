@@ -137,6 +137,7 @@ android {
 }
 
 dependencies {
+    compile "com.tencent.mm.opensdk:wechat-sdk-android-with-mta:+" //todo: 添加微信SDK依赖
     compile fileTree(dir: "libs", include: ["*.jar"])
     compile "com.android.support:appcompat-v7:23.0.1"
     compile "com.facebook.react:react-native:+"  // From node_modules
