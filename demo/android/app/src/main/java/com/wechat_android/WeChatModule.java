@@ -3,6 +3,7 @@ package com.wechat_android; //todo: 换成你的包名
 import android.content.Context;
 import android.content.Intent;
 import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.net.Uri;
 import android.support.annotation.Nullable;
 
@@ -324,7 +325,20 @@ public class WeChatModule extends ReactContextBaseJavaModule implements IWXAPIEv
         } else if (type.equals("file")) {
             mediaObject = __jsonToFileMedia(data);
         } else if (type.equals("miniProgram")) {
-            mediaObject = _jsonToMiniProgram(data);
+            __jsonToMiniProgramMedia(data, new MediaObjectCallback() {
+                @Override
+                public void invoke(@Nullable WXMediaMessage.IMediaObject mediaObject, @Nullable Bitmap bitmap) {
+                    if (mediaObject == null) {
+                        callback.invoke(INVALID_ARGUMENT);
+                    } else {
+                        thumbImage = bitmap;
+                        WeChatModule.this._share(scene, data, thumbImage, mediaObject, callback);
+                    }
+                }
+            });
+            return;
+            // mediaObject = _jsonToMiniProgram(data);
+            // thumbImage = BitmapFactory.decodeResource(getReactApplicationContext(), R.mipmap.icon64_appwx_logo); //在路径android/app/src/main/res/mipmap-xhdpi/下添加小程序图片icon64_appwx_logo.png
         }
 
         if (mediaObject == null) {
@@ -465,16 +479,52 @@ public class WeChatModule extends ReactContextBaseJavaModule implements IWXAPIEv
         return new WXFileObject(data.getString("filePath"));
     }
 
-    private WXMiniProgramObject _jsonToMiniProgram(ReadableMap data) {
-        if (!data.hasKey("miniProgram")) {
-            return null;
+    // private WXMiniProgramObject _jsonToMiniProgram(ReadableMap data) {
+    //     if (!data.hasKey("miniProgram")) {
+    //         return null;
+    //     }
+    //     __jsonToMiniProgramMedia(data, callback);
+
+    //     WXMiniProgramObject ret = new WXMiniProgramObject();
+    //     ret.webpageUrl = data.getString("webpageUrl");
+    //     ret.userName = data.getString("userName");
+    //     ret.path = data.getString("path");
+    //     return ret;
+    // }
+
+    private void __jsonToMiniProgramMedia(ReadableMap data, final MediaObjectCallback callback) {
+        if (!data.hasKey("imageUrl")) {
+            callback.invoke(null, null);
+            return;
+        }
+        String imageUrl = data.getString("imageUrl");
+        Uri imageUri;
+        try {
+            imageUri = Uri.parse(imageUrl);
+            // Verify scheme is set, so that relative uri (used by static resources) are not
+            // handled.
+            if (imageUri.getScheme() == null) {
+                imageUri = getResourceDrawableUri(getReactApplicationContext(), imageUrl);
+            }
+        } catch (Exception e) {
+            imageUri = null;
         }
 
-        WXMiniProgramObject ret = new WXMiniProgramObject();
-        ret.webpageUrl = data.getString("webpageUrl");
-        ret.userName = data.getString("userName");
-        ret.path = data.getString("path");
-        return ret;
+        if (imageUri == null) {
+            callback.invoke(null, null);
+            return;
+        }
+
+        this._getImage(imageUri, null, new ImageCallback() {
+            @Override
+            public void invoke(@Nullable Bitmap bitmap) {
+                WXMiniProgramObject ret = new WXMiniProgramObject();
+                ret.webpageUrl = data.getString("webpageUrl");
+                ret.userName = data.getString("userName");
+                ret.path = data.getString("path");
+                callback.invoke(bitmap == null ? null : ret, bitmap);
+            }
+        });
     }
 
     // TODO:
