@@ -48,21 +48,24 @@ export default class App extends Component {
       .then((isInstalled) => {
         if (isInstalled) {
           //发送授权请求
-          let imageResource = require('./icon64_wx_logo.png');
+          let imageResource = require('./icon64_wx_logo.png'); //小程序消息封面图片，小于128k
           WeChat.shareToSession({
             type: 'miniProgram',
-            title: '微信小程序消息',
-            description: '发送微信小程序消息给好友',
+            webpageUrl: "http://www.qq.com", //兼容低版本的网页链接
+            userName: "gh_d43f693ca31f", //小程序原始id
+            path: "/pages/media", //小程序页面路径
+            title: '微信小程序消息', //小程序消息title
+            description: '发送微信小程序消息给好友', //小程序消息desc
             mediaTagName: '小程序消息',
             messageAction: undefined,
             messageExt: undefined,
-            imageUrl: resolveAssetSource(imageResource).uri
+            imageUrl: resolveAssetSource(imageResource).uri //小程序消息封面图片，小于128k
           })
           .then(result => {
             console.log('成功发送微信小程序消息给好友', result);
           })
           .catch(err => {
-            console.log('登录授权发生错误：', err.message);
+            console.log('发送微信小程序消息发生错误：', err.message);
           })
         } else {
           console.log('没有安装微信，请先安装微信客户端在进行登录');
