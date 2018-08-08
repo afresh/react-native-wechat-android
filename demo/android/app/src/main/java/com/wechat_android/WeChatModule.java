@@ -325,14 +325,13 @@ public class WeChatModule extends ReactContextBaseJavaModule implements IWXAPIEv
         } else if (type.equals("file")) {
             mediaObject = __jsonToFileMedia(data);
         } else if (type.equals("miniProgram")) {
-            __jsonToMiniProgramMedia(data, new MediaObjectCallback() {
+            __jsonToMiniProgramMedia(data, new MiniObjectCallback() {
                 @Override
                 public void invoke(@Nullable WXMediaMessage.IMediaObject mediaObject, @Nullable Bitmap bitmap) {
                     if (mediaObject == null) {
                         callback.invoke(INVALID_ARGUMENT);
                     } else {
-                        thumbImage = bitmap;
-                        WeChatModule.this._share(scene, data, thumbImage, mediaObject, callback);
+                        WeChatModule.this._share(scene, data, bitmap, mediaObject, callback);
                     }
                 }
             });
@@ -479,20 +478,7 @@ public class WeChatModule extends ReactContextBaseJavaModule implements IWXAPIEv
         return new WXFileObject(data.getString("filePath"));
     }
 
-    // private WXMiniProgramObject _jsonToMiniProgram(ReadableMap data) {
-    //     if (!data.hasKey("miniProgram")) {
-    //         return null;
-    //     }
-    //     __jsonToMiniProgramMedia(data, callback);
-
-    //     WXMiniProgramObject ret = new WXMiniProgramObject();
-    //     ret.webpageUrl = data.getString("webpageUrl");
-    //     ret.userName = data.getString("userName");
-    //     ret.path = data.getString("path");
-    //     return ret;
-    // }
-
-    private void __jsonToMiniProgramMedia(ReadableMap data, final MediaObjectCallback callback) {
+    private void __jsonToMiniProgramMedia(final ReadableMap data, final MiniObjectCallback callback) {
         if (!data.hasKey("imageUrl")) {
             callback.invoke(null, null);
             return;
@@ -573,4 +559,7 @@ public class WeChatModule extends ReactContextBaseJavaModule implements IWXAPIEv
         void invoke(@Nullable WXMediaMessage.IMediaObject mediaObject);
     }
 
+    private interface MiniObjectCallback {
+        void invoke(@Nullable WXMediaMessage.IMediaObject mediaObject, @Nullable Bitmap bitmap);
+    }
 }
