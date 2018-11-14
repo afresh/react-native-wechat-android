@@ -29,6 +29,7 @@ import com.facebook.react.bridge.WritableMap;
 import com.facebook.react.modules.core.DeviceEventManagerModule;
 import com.tencent.mm.opensdk.modelbase.BaseReq;
 import com.tencent.mm.opensdk.modelbase.BaseResp;
+import com.tencent.mm.opensdk.modelbiz.WXLaunchMiniProgram;
 import com.tencent.mm.opensdk.modelmsg.SendAuth;
 import com.tencent.mm.opensdk.modelmsg.SendMessageToWX;
 import com.tencent.mm.opensdk.modelmsg.WXFileObject;
@@ -74,7 +75,7 @@ public class WeChatModule extends ReactContextBaseJavaModule implements IWXAPIEv
      * fix Native module WeChatModule tried to override WeChatModule for module name
      * RCTWeChat. If this was your intention, return true from
      * WeChatModule#canOverrideExistingModule() bug
-     * 
+     *
      * @return
      */
     public boolean canOverrideExistingModule() {
@@ -325,14 +326,13 @@ public class WeChatModule extends ReactContextBaseJavaModule implements IWXAPIEv
         } else if (type.equals("file")) {
             mediaObject = __jsonToFileMedia(data);
         } else if (type.equals("miniProgram")) {
-            __jsonToMiniProgramMedia(data, new MediaObjectCallback() {
+            __jsonToMiniProgramMedia(data, new MiniObjectCallback() {
                 @Override
                 public void invoke(@Nullable WXMediaMessage.IMediaObject mediaObject, @Nullable Bitmap bitmap) {
                     if (mediaObject == null) {
                         callback.invoke(INVALID_ARGUMENT);
                     } else {
-                        thumbImage = bitmap;
-                        WeChatModule.this._share(scene, data, thumbImage, mediaObject, callback);
+                        WeChatModule.this._share(scene, data, bitmap, mediaObject, callback);
                     }
                 }
             });
@@ -349,7 +349,7 @@ public class WeChatModule extends ReactContextBaseJavaModule implements IWXAPIEv
     }
 
     private void _share(int scene, ReadableMap data, Bitmap thumbImage, WXMediaMessage.IMediaObject mediaObject,
-            Callback callback) {
+                        Callback callback) {
 
         WXMediaMessage message = new WXMediaMessage();
         message.mediaObject = mediaObject;
@@ -479,20 +479,7 @@ public class WeChatModule extends ReactContextBaseJavaModule implements IWXAPIEv
         return new WXFileObject(data.getString("filePath"));
     }
 
-    // private WXMiniProgramObject _jsonToMiniProgram(ReadableMap data) {
-    //     if (!data.hasKey("miniProgram")) {
-    //         return null;
-    //     }
-    //     __jsonToMiniProgramMedia(data, callback);
-
-    //     WXMiniProgramObject ret = new WXMiniProgramObject();
-    //     ret.webpageUrl = data.getString("webpageUrl");
-    //     ret.userName = data.getString("userName");
-    //     ret.path = data.getString("path");
-    //     return ret;
-    // }
-
-    private void __jsonToMiniProgramMedia(ReadableMap data, final MediaObjectCallback callback) {
+    private void __jsonToMiniProgramMedia(final ReadableMap data, final MiniObjectCallback callback) {
         if (!data.hasKey("imageUrl")) {
             callback.invoke(null, null);
             return;
@@ -525,6 +512,21 @@ public class WeChatModule extends ReactContextBaseJavaModule implements IWXAPIEv
                 callback.invoke(bitmap == null ? null : ret, bitmap);
             }
         });
+    }
+
+    @ReactMethod
+    public void launchMini(ReadableMap data, Callback callback) {
+        if (api == null) {
+            callback.invoke(NOT_REGISTERED);
+            return;
+        }
+        WXLaunchMiniProgram.Req req = new WXLaunchMiniProgram.Req();
+        req.userName = data.getString("userName"); //填小程序原始id
+        req.path = data.getString("path"); //拉起小程序页面的可带参路径，不填默认拉起小程序首页
+        req.miniprogramType = data.getInt("miniProgramType"); //可选打开开发版、体验版和正式版
+//        req.miniprogramType = WXLaunchMiniProgram.Req.MINIPTOGRAM_TYPE_RELEASE; //可选打开开发版、体验版和正式版
+        boolean success = api.sendReq(req);
+        if (!success) callback.invoke(INVALID_ARGUMENT);
     }
 
     // TODO:
@@ -573,4 +575,7 @@ public class WeChatModule extends ReactContextBaseJavaModule implements IWXAPIEv
         void invoke(@Nullable WXMediaMessage.IMediaObject mediaObject);
     }
 
+    private interface MiniObjectCallback {
+        void invoke(@Nullable WXMediaMessage.IMediaObject mediaObject, @Nullable Bitmap bitmap);
+    }
 }
